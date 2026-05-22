@@ -36,8 +36,18 @@ def calculate_portfolio_returns(asset_returns,weights):
     portfolio_daily_ret=(asset_returns*weights).sum(axis=1)
     return portfolio_daily_ret
 
-def calculate_portfolio_annual_return(portfolio_daily_ret):
+def calculate_portfolio_cumulative_return(portfolio_daily_ret):
+    """Total return over the full window: (1+r1)(1+r2)...(1+rn) - 1."""
     return (1 + portfolio_daily_ret).prod() - 1
+
+
+def calculate_portfolio_cagr(portfolio_daily_ret, trading_days_per_year=252):
+    """Annualised compound growth rate derived from cumulative return."""
+    cumulative = (1 + portfolio_daily_ret).prod()
+    n_years = len(portfolio_daily_ret) / trading_days_per_year
+    if n_years <= 0:
+        return 0.0
+    return cumulative ** (1 / n_years) - 1
 
 def calculate_daily_portfolio_volatility(log_returns,weights):
     validate_weights(weights, log_returns.columns.tolist())

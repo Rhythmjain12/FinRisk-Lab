@@ -16,7 +16,8 @@ from src.metrics.beta import calculate_beta
 from src.metrics.sharpe import calculate_sharpe
 from src.portfolio.portfolio_engine import (
     calculate_portfolio_returns,
-    calculate_portfolio_annual_return,
+    calculate_portfolio_cumulative_return,
+    calculate_portfolio_cagr,
     calculate_portfolio_value_series,
     calculate_daily_portfolio_volatility,
     calculate_annual_portfolio_volatility,
@@ -115,7 +116,8 @@ def main():
     print("Calculating portfolio analytics...")
     
     portfolio_daily_returns = calculate_portfolio_returns(normal_returns, portfolio_weights)
-    portfolio_annual_return = calculate_portfolio_annual_return(portfolio_daily_returns)
+    portfolio_cumulative_return = calculate_portfolio_cumulative_return(portfolio_daily_returns)
+    portfolio_cagr = calculate_portfolio_cagr(portfolio_daily_returns, settings.TRADING_DAYS_PER_YEAR)
     
     portfolio_daily_volatility = calculate_daily_portfolio_volatility(log_returns, portfolio_weights)
     portfolio_annual_volatility = calculate_annual_portfolio_volatility(portfolio_daily_volatility)
@@ -162,8 +164,10 @@ def main():
     plot_correlation_heatmap(correlation_matrix)
     plot_risk_contribution(portfolio_weights, asset_risk_contribution)
     
-    # Aggregate concentrated stress for plot
-    concentration_portfolio_loss_agg = float(sum(concentration_stress_loss.values()))
+    # Concentrated stress shown on the plot = worst single-asset shock.
+    # Summing per-asset shocks (each in isolation) collapses to total_weight x shock,
+    # which isn't a meaningful concentration scenario.
+    concentration_portfolio_loss_agg = float(min(concentration_stress_loss.values()))
     
     plot_stress_test(
         stresses_portfolio_returns=float(stressed_portfolio_loss),
@@ -184,22 +188,29 @@ def main():
     )
     
     # --- Output Results ---
+    # Normalise risk contributions so they sum to 100% (matches chart 04 scale)
+    risk_contribution_pct = (asset_risk_contribution / asset_risk_contribution.sum() * 100).to_dict()
+
     results = {
         "portfolio_metrics": {
-            "annual_return": float(portfolio_annual_return),
+            "cumulative_return": float(portfolio_cumulative_return),
+            "cagr": float(portfolio_cagr),
             "annual_volatility": float(portfolio_annual_volatility),
             "max_drawdown": float(portfolio_max_drawdown),
             "diversification_benefit": float(diversification_benefit)
         },
         "stress_test_results": {
             "market_shock_20pct_loss": float(stressed_portfolio_loss),
+            "single_asset_minus_40pct_per_asset": {k: float(v) for k, v in concentration_stress_loss.items()},
+            "worst_single_asset_shock_loss": float(min(concentration_stress_loss.values())),
             "diversification_failure_volatility": float(annual_portfolio_vol_diversification_failure)
         },
         "asset_metrics": {
             "annual_volatility": annual_volatility.to_dict(),
             "sharpe_ratio": annual_sharpe.to_dict(),
             "beta": beta.to_dict(),
-            "max_drawdown": asset_max_drawdown.to_dict()
+            "max_drawdown": asset_max_drawdown.to_dict(),
+            "risk_contribution_pct": risk_contribution_pct
         }
     }
     
