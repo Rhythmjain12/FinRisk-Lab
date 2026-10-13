@@ -336,7 +336,7 @@ npm run preview      # build, then serve site + Worker at http://localhost:5179
 
 For live reload while editing, run `npm run dev:api` and `npm run dev` in two terminals.
 
-Deploy: `npm run deploy` from `web/` (needs `wrangler login`). For automatic deploys on every push to `main`, connect this repository to the `finrisk-lab` Worker in the Cloudflare dashboard (Settings → Build) with root directory `web`, build command `npm run build` and deploy command `npx wrangler deploy`.
+Deploy: every push to `main` that touches `web/` is tested and deployed by [`.github/workflows/deploy-web.yml`](.github/workflows/deploy-web.yml), using the repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. To deploy by hand: `npm run deploy` from `web/` (needs `wrangler login`).
 
 ---
 
