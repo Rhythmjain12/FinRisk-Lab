@@ -282,6 +282,7 @@ select option { background: var(--paper); color: var(--ink); }
 
 .alert { margin: 14px 0 0; padding: 12px 14px; border-left: 3px solid var(--risk); background: var(--paper-2); font-size: 15px; }
 .alert--wide { flex-basis: 100%; margin: 0; }
+.alert--stale { margin: 20px 0 0; }
 .primary:disabled { opacity: 0.6; cursor: progress; transform: none; background: var(--ink); }
 .primary--small { margin-left: 0; padding: 11px 18px; font-size: 16px; }
 .lede__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 22px; margin: 26px 0 0; }

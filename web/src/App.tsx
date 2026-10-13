@@ -38,6 +38,8 @@ export function App() {
   const [remember, setRemember] = useState(saved !== null);
   const [status, setStatus] = useState<Status>({ state: "idle" });
   const [report, setReport] = useState<Report | null>(null);
+  const [reportInputs, setReportInputs] = useState("");      // what the current report was computed from
+  const inputs = JSON.stringify([holdings, settings]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -61,6 +63,7 @@ export function App() {
       });
       settled = true;
       setReport(next);
+      setReportInputs(JSON.stringify([target, settings]));
       setStatus({ state: "idle" });
       setView("report");
       window.scrollTo(0, 0);
@@ -100,18 +103,52 @@ export function App() {
       </header>
 
       <main key={view}>
-        {view === "holdings" || !report ? (
+        {view === "holdings" ? (
           <HoldingsView
             holdings={holdings} onChange={setHoldings}
             settings={settings} onSettings={setSettings}
             remember={remember} onRemember={setRemember}
-            status={view === "report" && status.state === "idle"
-              ? { state: "error", message: "No report yet. Check your holdings, then run the numbers." }
-              : status}
+            status={status}
             onRun={() => run()}
           />
+        ) : status.state === "loading" || !report ? (
+          // The Report tab before there is a report: say so, and offer the one thing to do next.
+          <div className="sheet">
+            <section className="lede reveal">
+              <p className="kicker">Report</p>
+              {status.state === "loading" ? (
+                <>
+                  <h1>Fetching prices…</h1>
+                  <p className="lede__sub" role="status">
+                    {status.total ? `${status.done} of ${status.total} price histories loaded.` : "Starting."}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h1>No report yet.</h1>
+                  <p className="lede__sub">
+                    The report is worked out from your holdings. There are {holdings.length} on the Holdings page
+                    now{holdings === SAMPLE ? " (the sample portfolio)" : ""}.
+                  </p>
+                  {status.state === "error" && <p className="alert" role="alert">{status.message}</p>}
+                  <p className="lede__actions">
+                    <button className="primary primary--small" onClick={() => run()}>Run the numbers →</button>
+                    <button className="link" onClick={() => setView("holdings")}>Edit holdings</button>
+                  </p>
+                </>
+              )}
+            </section>
+          </div>
         ) : (
-          <ReportView report={report} onEdit={() => setView("holdings")} />
+          <>
+            {reportInputs !== inputs && (
+              <p className="alert alert--stale no-print" role="status">
+                Your holdings or settings have changed since this report was run.{" "}
+                <button className="link" onClick={() => run()}>Run it again</button>
+              </p>
+            )}
+            <ReportView report={report} onEdit={() => setView("holdings")} />
+          </>
         )}
       </main>
 
