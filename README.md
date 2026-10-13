@@ -314,6 +314,30 @@ How the mixed portfolio is handled:
 
 ---
 
+## Web app
+
+The same analysis runs in the browser, in [`web/`](web/): enter holdings, get the risk statement, download it as a PDF.
+
+- **Nothing to install, nothing uploaded.** The risk engine is a TypeScript port of the Python one ([`web/src/engine/`](web/src/engine/)) and runs in your browser. Amounts never leave it; only search text, ticker symbols and fund codes are sent, to fetch prices.
+- **Same numbers as the Python tool.** [`web/test/parity.test.ts`](web/test/parity.test.ts) runs both engines on the same prices and requires every metric to match to 1e-9. Regenerate the fixture with `venv/bin/python web/test/make_fixture.py` after changing the method.
+- **Same holdings file.** Import and export use the `holdings.csv` format above.
+- **PDF.** "Download PDF" opens the browser's print dialog with an A4 layout; choose "Save as PDF".
+
+How it is hosted: one Cloudflare Worker serves the built site and answers `/api/*`, which relays Yahoo Finance's price and search endpoints (browsers cannot call them directly). Mutual-fund NAVs come straight from mfapi.in.
+
+```bash
+cd web
+npm install
+npm test             # engine parity with Python, panel builder, CSV
+npm run preview      # build, then serve site + Worker at http://localhost:5179
+```
+
+For live reload while editing, run `npm run dev:api` and `npm run dev` in two terminals.
+
+Deploy: connect this repository in the Cloudflare dashboard (Workers & Pages → Create → Import a repository) with root directory `web`, build command `npm run build` and deploy command `npx wrangler deploy`. Every push to `main` then deploys.
+
+---
+
 ## Correctness notes
 
 **2026-10-13 — methodology review.** A full audit ([`ANALYSIS_REPORT.md`](ANALYSIS_REPORT.md)) led to these changes; the worked-example numbers and charts above were regenerated afterwards.
