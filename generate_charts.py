@@ -28,7 +28,7 @@ counter = {"i": 0}
 def show_and_save(self, *args, **kwargs):
     name = NAMES[counter["i"]] if counter["i"] < len(NAMES) else f"extra_{counter['i']:02d}"
     out = chart_dir / f"{name}.png"
-    self.write_image(str(out), width=1400, height=800, scale=2)
+    self.write_image(str(out), scale=2)  # size comes from each chart's own layout
     print(f"  saved {out}")
     counter["i"] += 1
 

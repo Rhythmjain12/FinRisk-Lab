@@ -1,29 +1,19 @@
-import pandas as pd #type:ignore
 import numpy as np #type:ignore
-from config.settings import TRADING_DAYS_PER_YEAR
+from config.settings import TRADING_DAYS_PER_YEAR, RISK_FREE_RATE, MIN_VOL_FOR_RATIOS
 
-def calculate_sharpe(daily_returns,annual_vol):
+def calculate_sharpe(returns, risk_free_rate=RISK_FREE_RATE, periods_per_year=TRADING_DAYS_PER_YEAR):
     """
-    Computes the annualized Sharpe ratio for each asset.
-
-    Parameters:
-    - daily_returns : pd.DataFrame
-        Daily simple returns for each asset.
-    - annual_vol : pd.Series
-        Annualized volatility per asset.
-
-    Returns:
-    - pd.Series
-        Sharpe ratio per asset.
+    Annualised Sharpe ratio per asset (DataFrame) or for one series (Series).
 
     Notes:
-    - Sharpe ratio is undefined for zero volatility.
-    - Risk-free rate is configurable.
+    - Numerator and denominator both come from ``returns`` (simple returns),
+      so the ratio uses a single, consistent return type.
+    - ``risk_free_rate`` is annual.
+    - Sharpe is undefined for a (near-)zero-volatility series (cash, fixed
+      deposit): those come back as NaN rather than a misleading huge number.
     """
-
-    # Fail loudly here to avoid producing misleading Sharpe ratios
-    if (annual_vol <= 0).any(): 
-        raise ValueError("Sharpe ratio undefined when volatility is zero or negative.")
-
-    annual_sharpe=(daily_returns.mean()*TRADING_DAYS_PER_YEAR)/annual_vol
-    return annual_sharpe
+    annual_return = returns.mean() * periods_per_year
+    annual_vol = returns.std() * np.sqrt(periods_per_year)
+    if np.ndim(annual_vol) == 0:
+        return (annual_return - risk_free_rate) / annual_vol if annual_vol >= MIN_VOL_FOR_RATIOS else float("nan")
+    return (annual_return - risk_free_rate) / annual_vol.where(annual_vol >= MIN_VOL_FOR_RATIOS)

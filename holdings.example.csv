@@ -1,0 +1,22 @@
+# FinRisk-Lab holdings file. Copy to holdings.csv and replace the rows with your own.
+#
+# name         : any unique label (shown on charts)
+# asset_class  : free text used for roll-ups, e.g. Equity / Debt / Gold / Cash
+# region       : free text used for roll-ups, e.g. India / International
+# source       : yahoo  -> symbol is a Yahoo Finance ticker (NSE stocks/ETFs end in .NS; US tickers as-is)
+#                mf     -> symbol is the AMFI scheme code   (find it:  python -m src.main --find-fund "fund name")
+#                cash   -> savings / FD; no symbol; give value_inr and annual_yield
+# currency     : optional. Detected from Yahoo and converted to INR automatically; if filled in, it is cross-checked.
+# units        : number of shares / fund units held      } give exactly one
+# value_inr    : or the current value of the holding in INR }
+# annual_yield : cash only, as a fraction: 0.07 for a 7% FD
+#
+name,asset_class,region,source,symbol,currency,units,value_inr,annual_yield
+Parag Parikh Flexi Cap,Equity,India,mf,122639,INR,2500,,
+HDFC Liquid Fund,Debt,India,mf,119091,INR,,300000,
+Nifty 50 ETF,Equity,India,yahoo,NIFTYBEES.NS,INR,800,,
+Gold ETF,Gold,India,yahoo,GOLDBEES.NS,INR,1500,,
+Reliance Industries,Equity,India,yahoo,RELIANCE.NS,INR,60,,
+Apple,Equity,International,yahoo,AAPL,USD,10,,
+S&P 500 ETF (US listed),Equity,International,yahoo,VOO,USD,4,,
+Fixed Deposit,Cash,India,cash,,INR,,200000,0.07
