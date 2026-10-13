@@ -13,6 +13,7 @@ Design choices:
 - Visuals are explanatory, not decorative.
 - Each chart corresponds to a specific analytical question.
 - Plots fail loudly when inputs are invalid.
+- Every function returns its figure; the caller shows or saves it.
 """
 
 import pandas as pd #type:ignore
@@ -21,7 +22,7 @@ import plotly.graph_objects as go  # type: ignore
 from plotly.subplots import make_subplots  # type: ignore
 import plotly.express as px  # type: ignore
 
-def plot_normalized_prices(clean_prices, benchmark_clean):
+def plot_normalized_prices(clean_prices, benchmark_clean, benchmark_name="Benchmark"):
     """
     clean_prices    : DataFrame (index = Date, columns = asset prices)
     benchmark_clean : Series or DataFrame (benchmark prices)
@@ -68,7 +69,7 @@ def plot_normalized_prices(clean_prices, benchmark_clean):
             y=benchmark,
             mode="lines",
             line=dict(width=3, color="#111827"),  # near-black
-            name="SENSEX"
+            name=benchmark_name
         )
     )
 
@@ -99,10 +100,9 @@ def plot_normalized_prices(clean_prices, benchmark_clean):
         gridcolor="rgba(0,0,0,0.12)"
     )
 
-    fig.show()
-    return
+    return fig
 
-def plot_drawdowns_comparison(asset_drawdowns, max_asset_drawdown, portfolio_drawdowns, max_portfolio_drawdown):
+def plot_drawdowns_comparison(asset_drawdowns, portfolio_drawdowns):
 
     assets = asset_drawdowns.columns.tolist()
     n = len(assets)
@@ -111,7 +111,7 @@ def plot_drawdowns_comparison(asset_drawdowns, max_asset_drawdown, portfolio_dra
         rows=n + 1,
         cols=1,
         shared_xaxes=True,
-        vertical_spacing=0.04,  # tighter spacing
+        vertical_spacing=min(0.04, 0.5 / n),  # must shrink as rows grow
         subplot_titles=["Portfolio"] + assets
     )
 
@@ -180,7 +180,8 @@ def plot_drawdowns_comparison(asset_drawdowns, max_asset_drawdown, portfolio_dra
 
     fig.update_annotations(font=dict(size=10))  # smaller asset titles
 
-    fig.update_yaxes(range=[-60, 0], showgrid=True, gridcolor="rgba(0,0,0,0.08)")
+    floor = float(min(asset_drawdowns.min().min(), portfolio_drawdowns.min())) * 100 - 5
+    fig.update_yaxes(range=[floor, 0], showgrid=True, gridcolor="rgba(0,0,0,0.08)")
     fig.update_xaxes(showgrid=True, gridcolor="rgba(0,0,0,0.08)")
 
     for r in range(1, n + 1):
@@ -195,8 +196,7 @@ def plot_drawdowns_comparison(asset_drawdowns, max_asset_drawdown, portfolio_dra
         font=dict(size=11)
     )
 
-    fig.show()
-    return
+    return fig
 
 def plot_correlation_heatmap(corr_matrix):
     """
@@ -225,15 +225,14 @@ def plot_correlation_heatmap(corr_matrix):
 
     fig.update_layout(
         title="Asset Return Correlation Matrix",
-        width=800,
-        height=800,
+        width=max(800, 60 * len(corr_matrix) + 300),
+        height=max(800, 60 * len(corr_matrix) + 200),
         template="plotly_white"
     )
 
-    fig.show()
-    return
+    return fig
 
-def plot_risk_contribution(portfolio_weights, asset_risk_contribution):
+def plot_risk_contribution(portfolio_weights, asset_risk_contribution, label="Asset"):
 
     weights = pd.Series(portfolio_weights)
     risk = asset_risk_contribution
@@ -284,13 +283,13 @@ def plot_risk_contribution(portfolio_weights, asset_risk_contribution):
     )
 
     fig.update_layout(
-        title="Portfolio Weight vs Risk Contribution (Excess Risk Highlighted)",
+        title=f"Portfolio Weight vs Risk Contribution by {label} (Excess Risk Highlighted)",
         barmode="group",
         template="plotly_white",
         height=520,
-        width=950,
+        width=max(950, 60 * len(df)),
         yaxis_title="Percentage (%)",
-        xaxis_title="Asset",
+        xaxis_title=label,
         legend=dict(
             orientation="h",
             yanchor="bottom",
@@ -313,34 +312,22 @@ def plot_risk_contribution(portfolio_weights, asset_risk_contribution):
     layer="below traces"  # 🔑 prevents bar overlap
     )
 
-    fig.show()
-    return
+    return fig
 
-def plot_stress_test(
-    stresses_portfolio_returns,
-    concentrated_portfolio_loss,
-    annual_portfolio_vol_diversification_failure,
-    portfolio_max_drawdown
-):
+def plot_stress_test(scenario_losses, portfolio_max_drawdown):
     """
-    Clean, modern portfolio stress test visualization
-    (uses only existing project metrics)
+    scenario_losses        : dict (scenario label -> portfolio return, e.g. -0.15)
+    portfolio_max_drawdown : float
+
+    Only losses belong here. A stressed volatility is not a loss and is
+    reported separately.
     """
 
     # ---------- Prepare data ----------
-    stress_losses = pd.Series({
-        "Market Crash (-20%)": stresses_portfolio_returns,
-        "Concentrated Asset Shock": concentrated_portfolio_loss,
-        "Diversification Failure": -annual_portfolio_vol_diversification_failure
-    }) * 100
+    stress_losses = (pd.Series(scenario_losses) * 100).sort_values()
 
-    stress_losses = stress_losses.sort_values()
-
-    colors = {
-        "Market Crash (-20%)": "#64748b",        # slate blue
-        "Concentrated Asset Shock": "#dc2626",   # deep red
-        "Diversification Failure": "#f59e0b"     # amber
-    }
+    palette = ["#64748b", "#dc2626", "#f59e0b", "#7c3aed", "#0891b2", "#be185d"]
+    colors = {label: palette[i % len(palette)] for i, label in enumerate(scenario_losses)}
 
     # ---------- Create figure ----------
     fig = go.Figure()
@@ -381,12 +368,12 @@ def plot_stress_test(
     ),
     xaxis_title="Portfolio Loss (%)",
     template="plotly_white",
-    height=440,
-    width=900,
+    height=140 + 70 * len(stress_losses),
+    width=1000,
     showlegend=False,
 
     # 🔹 Increased left margin for label breathing room
-    margin=dict(l=220, r=40, t=80, b=60),
+    margin=dict(l=260, r=40, t=80, b=60),
 
     # 🔹 Light modern background
     paper_bgcolor="#f8fafc",   # very light slate
@@ -407,15 +394,14 @@ def plot_stress_test(
     automargin=True
     )
 
-    fig.show()
-    return
+    return fig
 
 def plot_asset_risk_return(annual_vol, sharpe, beta):
     df = pd.DataFrame({
         "Volatility": annual_vol * 100,
         "Sharpe": sharpe,
         "Beta": beta.abs()
-    })
+    }).dropna()  # zero-volatility holdings (cash) have no Sharpe ratio
 
     fig = go.Figure()
 
@@ -427,7 +413,7 @@ def plot_asset_risk_return(annual_vol, sharpe, beta):
             text=df.index,
             textposition="top center",
             marker=dict(
-                size=df["Beta"] * 20,
+                size=df["Beta"].clip(0.3, 3) * 20,
                 color=df["Beta"],
                 colorscale="Viridis",
                 showscale=True,
@@ -453,7 +439,7 @@ def plot_asset_risk_return(annual_vol, sharpe, beta):
         width=800
     )
 
-    fig.show()
+    return fig
 
 def plot_max_drawdown_comparison(asset_max_drawdown, portfolio_max_drawdown):
     """
@@ -467,14 +453,10 @@ def plot_max_drawdown_comparison(asset_max_drawdown, portfolio_max_drawdown):
 
     dd = dd.sort_values()  # worst drawdown first
 
+    # dark = portfolio, red = fell further than the portfolio, slate = held up better
     colors = [
-        "#dc2626",  # deep red
-        "#f97316",  # orange
-        "#f59e0b",  # amber
-        "#64748b",  # slate
-        "#3b82f6",  # blue
-        "#22c55e",  # green
-        "#0f172a",  # portfolio (dark)
+        "#0f172a" if name == "Portfolio" else "#dc2626" if v < dd["Portfolio"] else "#64748b"
+        for name, v in dd.items()
     ]
 
     fig = go.Figure()
@@ -484,7 +466,7 @@ def plot_max_drawdown_comparison(asset_max_drawdown, portfolio_max_drawdown):
             x=dd.values,
             y=dd.index,
             orientation="h",
-            marker=dict(color=colors[:len(dd)]),
+            marker=dict(color=colors),
             text=[f"{v:.1f}%" for v in dd.values],
             textposition="outside",
             hovertemplate="%{y}<br>Max DD: %{x:.1f}%<extra></extra>"
@@ -496,23 +478,24 @@ def plot_max_drawdown_comparison(asset_max_drawdown, portfolio_max_drawdown):
         title="Maximum Drawdown Comparison",
         xaxis_title="Max Drawdown (%)",
         template="plotly_white",
-        height=420,
-        width=900,
+        height=max(420, 34 * len(dd) + 140),
+        width=1000,
         paper_bgcolor="#f8fafc",
         plot_bgcolor="#ffffff",
-        margin=dict(l=180, r=40, t=70, b=50),
+        margin=dict(l=260, r=60, t=70, b=50),
         font=dict(size=14)
     )
 
     fig.update_xaxes(
         showgrid=True,
         gridcolor="rgba(0,0,0,0.18)",
-        zeroline=False
+        zeroline=False,
+        range=[dd.min() * 1.18, 0]  # room for the outside value labels
     )
 
     fig.update_yaxes(showgrid=False)
 
-    fig.show()
+    return fig
 
 def plot_diversification_benefit(
     annual_vol,
@@ -566,5 +549,5 @@ def plot_diversification_benefit(
         zeroline=False
     )
 
-    fig.show()
+    return fig
 
