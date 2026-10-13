@@ -316,6 +316,8 @@ How the mixed portfolio is handled:
 
 ## Web app
 
+**Live: [finrisk-lab.rhythmjain0212.workers.dev](https://finrisk-lab.rhythmjain0212.workers.dev)** ([sample report](https://finrisk-lab.rhythmjain0212.workers.dev/?sample=1))
+
 The same analysis runs in the browser, in [`web/`](web/): enter holdings, get the risk statement, download it as a PDF.
 
 - **Nothing to install, nothing uploaded.** The risk engine is a TypeScript port of the Python one ([`web/src/engine/`](web/src/engine/)) and runs in your browser. Amounts never leave it; only search text, ticker symbols and fund codes are sent, to fetch prices.
@@ -334,7 +336,7 @@ npm run preview      # build, then serve site + Worker at http://localhost:5179
 
 For live reload while editing, run `npm run dev:api` and `npm run dev` in two terminals.
 
-Deploy: connect this repository in the Cloudflare dashboard (Workers & Pages → Create → Import a repository) with root directory `web`, build command `npm run build` and deploy command `npx wrangler deploy`. Every push to `main` then deploys.
+Deploy: `npm run deploy` from `web/` (needs `wrangler login`). For automatic deploys on every push to `main`, connect this repository to the `finrisk-lab` Worker in the Cloudflare dashboard (Settings → Build) with root directory `web`, build command `npm run build` and deploy command `npx wrangler deploy`.
 
 ---
 
