@@ -336,7 +336,7 @@ npm run preview      # build, then serve site + Worker at http://localhost:5179
 
 For live reload while editing, run `npm run dev:api` and `npm run dev` in two terminals.
 
-Deploy: every push to `main` that touches `web/` is tested and deployed by [`.github/workflows/deploy-web.yml`](.github/workflows/deploy-web.yml), using the repository secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`. To deploy by hand: `npm run deploy` from `web/` (needs `wrangler login`).
+Deploy: Cloudflare is connected to this repository and builds and deploys `web/` on every push to `main`. [`.github/workflows/test-web.yml`](.github/workflows/test-web.yml) runs the tests on pushes and pull requests. To deploy by hand: `npm run deploy` from `web/` (needs `wrangler login` or a `CLOUDFLARE_API_TOKEN`).
 
 ---
 

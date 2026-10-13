@@ -1,0 +1,29 @@
+# Runs the web app's tests and build on every change to web/.
+# Deploying is done by Cloudflare itself (Workers Builds), which is connected to this repository.
+name: Test web app
+
+on:
+  push:
+    branches: [main]
+    paths: ["web/**", ".github/workflows/test-web.yml"]
+  pull_request:
+    paths: ["web/**", ".github/workflows/test-web.yml"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
