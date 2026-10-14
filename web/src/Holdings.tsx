@@ -14,6 +14,19 @@ const CLASSES = ["Equity", "Debt", "Gold", "Cash", "Other"];
 const REGIONS = ["India", "International"];
 const LOOKBACKS = [1, 3, 5, 10];
 
+// The columns of holdings.csv, in file order, as someone filling in a spreadsheet needs them explained.
+const TEMPLATE_COLUMNS: [string, string][] = [
+  ["name", "Any label you like. Each row needs a different one."],
+  ["asset_class", "Equity, Debt, Gold, Cash or Other."],
+  ["region", "India or International."],
+  ["source", "yahoo for shares and ETFs, mf for Indian mutual funds, cash for savings and fixed deposits."],
+  ["symbol", "The Yahoo Finance ticker (RELIANCE.NS for NSE shares, AAPL for US ones) or the fund’s AMFI scheme code. Leave empty for cash. Not sure? Search for it in the table above."],
+  ["currency", "Leave empty. It is detected from the ticker."],
+  ["units", "How many shares or fund units you hold. Or leave it empty and fill value_inr."],
+  ["value_inr", "What the holding is worth today, in rupees, if you would rather not give units. Fill one of units or value_inr, not both."],
+  ["annual_yield", "Cash and FDs only: the yearly interest as a decimal, so 0.07 for 7%."],
+];
+
 const blank: Holding = {
   name: "", source: "yahoo", symbol: "", asset_class: "Equity", region: "India",
   units: null, value_inr: null, annual_yield: null,
@@ -48,10 +61,10 @@ export function HoldingsView({ holdings, onChange, settings, onSettings, remembe
     }
   }
 
-  function exportCsv() {
+  function download(rows: Holding[], fileName: string) {
     const link = document.createElement("a");
-    link.href = URL.createObjectURL(new Blob([toHoldingsCsv(holdings)], { type: "text/csv" }));
-    link.download = "holdings.csv";
+    link.href = URL.createObjectURL(new Blob([toHoldingsCsv(rows)], { type: "text/csv" }));
+    link.download = fileName;
     link.click();
     URL.revokeObjectURL(link.href);
   }
@@ -147,10 +160,43 @@ export function HoldingsView({ holdings, onChange, settings, onSettings, remembe
           <button className="link" onClick={() => onChange(SAMPLE)}>Load the sample</button>
           <button className="link" onClick={() => onChange([{ ...blank }, { ...blank }])}>Clear</button>
           <button className="link" onClick={() => fileInput.current?.click()}>Import CSV</button>
-          <button className="link" onClick={exportCsv}>Export CSV</button>
+          <button className="link" onClick={() => download(holdings, "holdings.csv")}>Export CSV</button>
           <input ref={fileInput} type="file" accept=".csv,text/csv" hidden onChange={(e) => { void importCsv(e.target.files?.[0]); e.target.value = ""; }} />
         </div>
         {fileError && <p className="alert" role="alert">{fileError}</p>}
+
+        <details className="template">
+          <summary>Prefer a spreadsheet? Download the template</summary>
+          <p>
+            Fill it in Excel, Numbers or Google Sheets, save it as CSV, then use <b>Import CSV</b>. It is the
+            same file the FinRisk-Lab Python tool reads. The template comes filled with the sample portfolio:
+            replace those rows with your own.
+          </p>
+          <button className="primary primary--small" onClick={() => download(SAMPLE, "holdings-template.csv")}>
+            Download template (.csv)
+          </button>
+          <div className="table-scroll">
+            <table className="ledger template__preview">
+              <caption className="sr-only">First rows of the template</caption>
+              <thead>
+                <tr>{TEMPLATE_COLUMNS.map(([column]) => <th key={column} scope="col">{column}</th>)}</tr>
+              </thead>
+              <tbody>
+                {SAMPLE.filter((_, i) => [0, 1, 2, 5, 7].includes(i)).map((h) => (
+                  <tr key={h.name}>
+                    {[h.name, h.asset_class, h.region, h.source, h.symbol, "", h.units, h.value_inr, h.annual_yield]
+                      .map((v, i) => <td key={i}>{v ?? ""}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <dl className="template__columns">
+            {TEMPLATE_COLUMNS.map(([column, meaning]) => (
+              <div key={column}><dt>{column}</dt><dd>{meaning}</dd></div>
+            ))}
+          </dl>
+        </details>
       </section>
 
       <section className="settings reveal" style={{ "--i": 2 } as React.CSSProperties}>

@@ -87,7 +87,7 @@ def load_holdings(path):
 
     # (.map, not .str: a column that is entirely blank is not a string column)
     holdings["source"] = holdings["source"].map(lambda v: v.lower() if isinstance(v, str) else v)
-    holdings["currency"] = holdings["currency"].map(lambda v: v.upper() if isinstance(v, str) else v)
+    holdings["currency"] = holdings["currency"].map(lambda v: v.upper() if isinstance(v, str) else v).astype(object)
     yahoo_rows = holdings["source"] == "yahoo"
     holdings.loc[yahoo_rows, "symbol"] = holdings.loc[yahoo_rows, "symbol"].map(
         lambda v: v.upper() if isinstance(v, str) else v
@@ -132,7 +132,6 @@ def load_holdings(path):
         if pd.notna(row["annual_yield"]) and not (0 <= row["annual_yield"] < 0.5):
             fail(row, "annual_yield is a fraction: enter 0.07 for 7%.")
     holdings["annual_yield"] = holdings["annual_yield"].fillna(0.0)
-    holdings["currency"] = holdings["currency"].astype(object)  # may be all-blank until detected
     return holdings.reset_index(drop=True)
 
 

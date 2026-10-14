@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { parseHoldingsCsv, toHoldingsCsv } from "../src/data/csv";
 import { buildInrPrices, fillOnto, forwardFill, HoldingError, validateHoldings, type Series } from "../src/engine/build";
+import { SAMPLE } from "../src/sample";
 import type { Holding } from "../src/types";
 
 const DAY = 86_400_000;
@@ -146,6 +147,13 @@ describe("holdings.csv", () => {
   test("round-trips through export", () => {
     const rows = parseHoldingsCsv(text);
     expect(parseHoldingsCsv(toHoldingsCsv(rows))).toEqual(rows);
+  });
+
+  test("the downloadable template imports cleanly and passes validation", () => {
+    const template = parseHoldingsCsv(toHoldingsCsv(SAMPLE));
+    expect(template).toEqual(SAMPLE);
+    expect(() => validateHoldings(template)).not.toThrow();
+    expect(new Set(template.map((h) => h.source))).toEqual(new Set(["yahoo", "mf", "cash"]));
   });
 
   test("explains what is wrong", () => {

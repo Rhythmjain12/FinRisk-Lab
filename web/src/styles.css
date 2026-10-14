@@ -290,6 +290,18 @@ select option { background: var(--paper); color: var(--ink); }
 .print-only { display: none; }
 .lens-title { font: 500 12px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); margin: 26px 0 12px; }
 
+.template { margin-top: 26px; border-top: 1px solid var(--rule); padding-top: 18px; }
+.template summary { cursor: pointer; font-weight: 500; width: fit-content; }
+.template summary:hover { color: var(--risk); }
+.template p { color: var(--ink-2); max-width: 70ch; font-size: 15px; }
+.template__preview { min-width: 820px; font-size: 13px; margin-top: 20px; }
+.template__preview th, .template__preview td { text-align: left; font-family: var(--mono); }
+.template__preview tbody th, .template__preview td:first-child { font-family: var(--body); }
+.template__columns { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px 32px; margin: 22px 0 0; }
+.template__columns div { border-top: 1px solid var(--rule); padding-top: 10px; }
+.template__columns dt { font: 500 13px var(--mono); }
+.template__columns dd { margin: 4px 0 0; font-size: 14px; color: var(--ink-2); }
+
 /* ---------- colophon ---------- */
 
 .colophon { border-top: 3px double var(--rule-strong); padding-top: 18px; font-size: 13px; color: var(--ink-2); display: grid; gap: 4px; }
